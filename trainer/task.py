@@ -13,6 +13,7 @@ from keras.layers import Flatten
 from keras.layers import Dense
 
 import csv
+import sys
 from sklearn.model_selection import train_test_split
 
 def export_kaggle_results(file_name, header1_name, header2_name, results):
@@ -52,10 +53,12 @@ def build_cnn():
 
 if __name__=='__main__':
 
+    train_x_file = sys.argv[1]
+    train_y_file = sys.argv[2]
     # Importing Data
     import numpy   as np
-    x = np.loadtxt("train_x.csv", delimiter=",") # load from text
-    y = np.loadtxt("train_y.csv", delimiter=",")
+    x = np.loadtxt(train_x_file, delimiter=",") # load from text
+    y = np.loadtxt(train_y_file, delimiter=",")
     x = x.reshape(-1, 64, 64) # reshape
     y = y.reshape(-1, 1)
 

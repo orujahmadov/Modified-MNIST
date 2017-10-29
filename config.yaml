@@ -1,7 +1,10 @@
 trainingInput:
   scaleTier: CUSTOM
-  masterType: complex_model_m
+  masterType: standard_gpu
   workerType: complex_model_m
   parameterServerType: large_model
-  workerCount: 9
-  parameterServerCount: 3
+  workerCount: 5
+  parameterServerCount: 2
+  args:
+    gs://modified-mnist-bucket/train_x.csv,
+    gs://modified-mnist-bucket/train_y.csv,
