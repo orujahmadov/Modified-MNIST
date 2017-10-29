@@ -60,5 +60,9 @@ classifier.add(Dense(units = 40, activation = 'sigmoid'))
 # Compiling the CNN
 classifier.compile(optimizer = 'adam', loss = 'categorical_crossentropy', metrics = ['accuracy'])
 
-from keras.preprocessing.image import ImageDataGenerator
-classifier.fit()
+classifier.fit(X_train, y_train, validation_data=(X_test, y_test), epochs=50, batch_size=32)
+score = classifier.evaluate(X_test, y_test, verbose=0)
+print(score[1]*100)
+
+# Save model
+classifier.save('cnn.h5')
