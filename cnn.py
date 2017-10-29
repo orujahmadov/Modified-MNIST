@@ -7,7 +7,6 @@ Created on Sat Oct 28 20:46:30 2017
 """
 
 # Importing the Keras libraries and packages
-import keras
 from keras.models import Sequential
 from keras.layers import Convolution2D
 from keras.layers import MaxPooling2D
@@ -28,13 +27,10 @@ def export_kaggle_results(file_name, header1_name, header2_name, results):
 
 # Importing Data
 import numpy   as np 
-import matplotlib.pyplot as plt # to visualize only  
 x = np.loadtxt("train_x.csv", delimiter=",") # load from text 
 y = np.loadtxt("train_y.csv", delimiter=",") 
 x = x.reshape(-1, 64, 64) # reshape 
 y = y.reshape(-1, 1)
-plt.imshow(np.uint8(x[5]))
-plt.show()
 
 X_train, X_test, y_train, y_test = train_test_split(x, x, random_state=0, test_size=0.2)            
 # Part 1 - Building the cnn
