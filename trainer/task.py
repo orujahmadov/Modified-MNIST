@@ -8,10 +8,12 @@ Created on Sat Oct 28 20:46:30 2017
 # Importing the Keras libraries and packages
 from keras.models import Sequential
 from keras.layers import Conv2D
+from keras.layers import Dropout
 from keras.layers import MaxPooling2D
 from keras.layers import Flatten
 from keras.layers import Dense
 from keras.utils.np_utils import to_categorical
+from keras.preprocessing.image import ImageDataGenerator
 
 import csv
 import sys
@@ -54,6 +56,25 @@ def build_cnn():
 
     # Convolution layer
     classifier.add(Conv2D(32, 3, 3, input_shape=(64, 64, 1), activation = 'relu'))
+    classifier.add(Dropout(0.2))
+    # Max Pooling layer
+    classifier.add(MaxPooling2D(pool_size = (2, 2)))
+
+    # Convolution layer
+    classifier.add(Conv2D(32, 3, 3, activation = 'relu'))
+    classifier.add(Dropout(0.2))
+    # Max Pooling layer
+    classifier.add(MaxPooling2D(pool_size = (2, 2)))
+
+    # Convolution layer
+    classifier.add(Conv2D(64, 3, 3, activation = 'relu'))
+    classifier.add(Dropout(0.2))
+    # Max Pooling layer
+    classifier.add(MaxPooling2D(pool_size = (2, 2)))
+
+    # Convolution layer
+    classifier.add(Conv2D(128, 3, 3, activation = 'relu'))
+    classifier.add(Dropout(0.2))
 
     # Max Pooling layer
     classifier.add(MaxPooling2D(pool_size = (2, 2)))
@@ -62,8 +83,10 @@ def build_cnn():
     classifier.add(Flatten())
 
     # Full connection
+    classifier.add(Dense(units = 512, activation = 'relu'))
+    classifier.add(Dense(units = 256, activation = 'relu'))
     classifier.add(Dense(units = 128, activation = 'relu'))
-    classifier.add(Dense(units = 40, activation = 'sigmoid'))
+    classifier.add(Dense(units = 40, activation = 'softmax'))
 
     # Compiling the CNN
     classifier.compile(optimizer = 'adam', loss = 'categorical_crossentropy', metrics = ['accuracy'])
@@ -72,19 +95,20 @@ def build_cnn():
 
 if __name__=='__main__':
 
+    labelEncoder = LabelEncoder()
+
     url_x = 'https://www.googleapis.com/download/storage/v1/b/modified-mnist-bucket/o/train_x.csv?generation=1509260014086323&alt=media'
     url_y = 'https://www.googleapis.com/download/storage/v1/b/modified-mnist-bucket/o/train_y.csv?generation=1509256324554912&alt=media'
     url_kaggle = 'https://www.googleapis.com/download/storage/v1/b/modified-mnist-bucket/o/test_x.csv?generation=1509329534125830&alt=media'
     train_x_file = pd.read_csv(url_x, header=None)
     train_y_file = pd.read_csv(url_y, header=None)
 
-    # Importing Data
+    # PREPROCESSING DATA .......................................................
     X = np.array(train_x_file.iloc[:])
     X = X.reshape(-1, 64, 64, 1)
 
     Y = np.array(train_y_file.iloc[:,0])
 
-    labelEncoder = LabelEncoder()
     labelEncoder.fit(Y)
     Y = labelEncoder.transform(Y)
     Y = to_categorical(Y, 40)
@@ -94,8 +118,22 @@ if __name__=='__main__':
     y_train = Y[:40000]
     y_test = Y[40000:]
 
+    datagen = ImageDataGenerator(
+    featurewise_center=True,
+    featurewise_std_normalization=True,
+    rotation_range=20,
+    width_shift_range=0.2,
+    height_shift_range=0.2,
+    horizontal_flip=True)
+
+    # compute quantities required for featurewise normalization
+    # (std, mean, and principal components if ZCA whitening is applied)
+    datagen.fit(X_train)
+
     classifier = build_cnn()
-    classifier.fit(X_train, y_train, epochs=100, batch_size=32)
+    # fits the model on batches with real-time data augmentation:
+    classifier.fit_generator(datagen.flow(X_train, y_train, batch_size=32),
+                        steps_per_epoch=len(X_train) / 32, epochs=100)
 
     test_kaggle_file = pd.read_csv(url_kaggle, header=None)
     X_kaggle = np.array(test_kaggle_file.iloc[:])
