@@ -19,6 +19,9 @@ import pandas as pd
 import numpy as np
 import os
 
+from sklearn.preprocessing import LabelEncoder
+from sklearn import metrics
+
 def upload_blob(bucket_name, source_file_name, destination_blob_name):
     """Uploads a file to the bucket."""
     from google.cloud import storage
@@ -60,10 +63,10 @@ def build_cnn():
 
     # Full connection
     classifier.add(Dense(units = 128, activation = 'relu'))
-    classifier.add(Dense(units = 82, activation = 'sigmoid'))
+    classifier.add(Dense(units = 40, activation = 'sigmoid'))
 
     # Compiling the CNN
-    classifier.compile(optimizer = 'adam', loss = 'binary_crossentropy', metrics = ['accuracy'])
+    classifier.compile(optimizer = 'adam', loss = 'categorical_crossentropy', metrics = ['accuracy'])
 
     return classifier
 
@@ -80,7 +83,11 @@ if __name__=='__main__':
     X = X.reshape(-1, 64, 64, 1)
 
     Y = np.array(train_y_file.iloc[:,0])
-    Y = to_categorical(Y, 82)
+
+    labelEncoder = LabelEncoder()
+    labelEncoder.fit(Y)
+    Y = labelEncoder.transform(Y)
+    Y = to_categorical(Y, 40)
 
     X_train = X[:40000]
     X_test = X[40000:]
@@ -88,15 +95,14 @@ if __name__=='__main__':
     y_test = Y[40000:]
 
     classifier = build_cnn()
-    classifier.fit(X_train, y_train, epochs=5, batch_size=32)
-    score = classifier.evaluate(X_test, y_test, verbose=0)
-
-    print(score[1]*100)
+    classifier.fit(X_train, y_train, epochs=100, batch_size=32)
 
     test_kaggle_file = pd.read_csv(url_kaggle, header=None)
     X_kaggle = np.array(test_kaggle_file.iloc[:])
     X_kaggle = X_kaggle.reshape(-1, 64, 64, 1)
-    export_kaggle_results("kaggle_results.csv", np.argmax(classifier.predict(X_kaggle), axis=1))
+    predictions = np.argmax(classifier.predict(X_kaggle), axis=1)
+    predictions = labelEncoder.inverse_transform(predictions)
+    export_kaggle_results("kaggle_results.csv", predictions)
     upload_blob("modified-mnist-bucket","kaggle_results.csv", "kaggle.csv")
     # Save model
     classifier.save('cnn.h5')
