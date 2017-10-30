@@ -17,9 +17,20 @@ import csv
 import sys
 import pandas as pd
 import numpy as np
+import os
 
-def squueze_labels(labels):
-    squeezed_labels =
+def upload_blob(bucket_name, source_file_name, destination_blob_name):
+    """Uploads a file to the bucket."""
+    from google.cloud import storage
+    storage_client = storage.Client()
+    bucket = storage_client.get_bucket(bucket_name)
+    blob = bucket.blob(destination_blob_name)
+
+    blob.upload_from_filename(source_file_name)
+
+    print('File {} uploaded to {}.'.format(
+        source_file_name,
+        destination_blob_name))
 
 def export_kaggle_results(file_name, results):
     with open(file_name, 'wb') as csvfile:
@@ -60,13 +71,13 @@ if __name__=='__main__':
 
     url_x = 'https://www.googleapis.com/download/storage/v1/b/modified-mnist-bucket/o/train_x.csv?generation=1509260014086323&alt=media'
     url_y = 'https://www.googleapis.com/download/storage/v1/b/modified-mnist-bucket/o/train_y.csv?generation=1509256324554912&alt=media'
-    #url_kaggle = ''
+    url_kaggle = 'https://www.googleapis.com/download/storage/v1/b/modified-mnist-bucket/o/test_x.csv?generation=1509329534125830&alt=media'
     train_x_file = pd.read_csv(url_x, header=None)
     train_y_file = pd.read_csv(url_y, header=None)
 
     # Importing Data
     X = np.array(train_x_file.iloc[:])
-    X = X.reshape(50000, 64, 64, 1)
+    X = X.reshape(-1, 64, 64, 1)
 
     Y = np.array(train_y_file.iloc[:,0])
     Y = to_categorical(Y, 82)
@@ -77,16 +88,16 @@ if __name__=='__main__':
     y_test = Y[40000:]
 
     classifier = build_cnn()
-    classifier.fit(X_train, y_train, validation_data=(X_test, y_test), epochs=15, batch_size=32)
+    classifier.fit(X_train, y_train, epochs=5, batch_size=32)
     score = classifier.evaluate(X_test, y_test, verbose=0)
 
     print(score[1]*100)
 
-    # Export kaggle results
-    # test_kaggle_file = pd.read_csv(url_kaggle, header=None)
-    # X_kaggle = np.array(test_kaggle_file.iloc[:])
-    # X_kaggle = X_kaggle.reshape(50000, 64, 64, 1)
-    # export_kaggle_results("kaggle_results.csv", np.argmax(classifier.predict(X_kaggle)))
-
+    test_kaggle_file = pd.read_csv(url_kaggle, header=None)
+    X_kaggle = np.array(test_kaggle_file.iloc[:])
+    X_kaggle = X_kaggle.reshape(-1, 64, 64, 1)
+    export_kaggle_results("kaggle_results.csv", np.argmax(classifier.predict(X_kaggle), axis=1))
+    upload_blob("modified-mnist-bucket","kaggle_results.csv", "kaggle.csv")
     # Save model
     classifier.save('cnn.h5')
+    upload_blob('modified-mnist-bucket','cnn.h5', 'cnn.h5')
