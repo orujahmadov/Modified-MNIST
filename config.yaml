@@ -5,5 +5,3 @@ trainingInput:
   parameterServerType: large_model
   workerCount: 5
   parameterServerCount: 2
-  args:
-    /b/modified-mnist-bucket/o/train_y.csv
