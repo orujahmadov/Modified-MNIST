@@ -14,7 +14,8 @@ from keras.layers import Dense
 
 import csv
 import sys
-from sklearn.model_selection import train_test_split
+import pandas as pd
+import numpy as np
 
 def export_kaggle_results(file_name, header1_name, header2_name, results):
     with open(file_name, 'wb') as csvfile:
@@ -53,16 +54,23 @@ def build_cnn():
 
 if __name__=='__main__':
 
-    train_x_file = sys.argv[1]
-    train_y_file = sys.argv[2]
-    # Importing Data
-    import numpy   as np
-    x = np.loadtxt(train_x_file, delimiter=",") # load from text
-    y = np.loadtxt(train_y_file, delimiter=",")
-    x = x.reshape(-1, 64, 64) # reshape
-    y = y.reshape(-1, 1)
+    url_x = 'https://www.googleapis.com/download/storage/v1/b/modified-mnist-bucket/o/train_x.csv?generation=1509260014086323&alt=media'
+    url_y = 'https://www.googleapis.com/download/storage/v1/b/modified-mnist-bucket/o/train_y.csv?generation=1509256324554912&alt=media'
 
-    X_train, X_test, y_train, y_test = train_test_split(x, x, random_state=0, test_size=0.2)
+    train_x_file = pd.read_csv(url_x, header=None)
+    train_y_file = pd.read_csv(url_y, header=None)
+
+    # Importing Data
+    X = np.array(train_x_file.iloc[:])
+    X = X.reshape(10000, 64, 64, 1)
+
+    Y = np.array(train_y_file.iloc[:,0])
+    Y = Y.reshape(-1, 1)
+
+    X_train = X[:40000]
+    X_test = X[40000:]
+    y_train = Y[:40000]
+    y_test = Y[40000:]
 
     classifier = build_cnn()
     classifier.fit(X_train, y_train, validation_data=(X_test, y_test), epochs=50, batch_size=32)

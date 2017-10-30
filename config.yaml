@@ -6,5 +6,4 @@ trainingInput:
   workerCount: 5
   parameterServerCount: 2
   args:
-    gs://modified-mnist-bucket/train_x.csv,
-    gs://modified-mnist-bucket/train_y.csv,
+    /b/modified-mnist-bucket/o/train_y.csv
