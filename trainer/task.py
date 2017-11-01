@@ -13,7 +13,6 @@ from keras.layers import MaxPooling2D
 from keras.layers import Flatten
 from keras.layers import Dense
 from keras.utils.np_utils import to_categorical
-from keras.preprocessing.image import ImageDataGenerator
 
 import csv
 import sys
@@ -55,41 +54,27 @@ def build_cnn():
     # Adding layers
 
     # Convolution layer
-    classifier.add(Conv2D(32, 3, 3, input_shape=(64, 64, 1), activation = 'relu'))
-    classifier.add(Dropout(0.2))
-    # Max Pooling layer
+    classifier.add(Conv2D(64, (3, 3), input_shape=(64, 64, 1), activation = 'relu'))
     classifier.add(MaxPooling2D(pool_size = (2, 2)))
+    classifier.add(Conv2D(64, (3, 3), activation = 'relu'))
 
-    # Convolution layer
-    classifier.add(Conv2D(32, 3, 3, activation = 'relu'))
-    classifier.add(Dropout(0.2))
-    # Max Pooling layer
+    classifier.add(Conv2D(128, (3, 3), activation = 'relu'))
     classifier.add(MaxPooling2D(pool_size = (2, 2)))
-
-    # Convolution layer
-    classifier.add(Conv2D(64, 3, 3, activation = 'relu'))
-    classifier.add(Dropout(0.2))
-    # Max Pooling layer
+    classifier.add(Conv2D(128, (3, 3), activation = 'relu'))
     classifier.add(MaxPooling2D(pool_size = (2, 2)))
-
-    # Convolution layer
-    classifier.add(Conv2D(128, 3, 3, activation = 'relu'))
     classifier.add(Dropout(0.2))
-
-    # Max Pooling layer
-    classifier.add(MaxPooling2D(pool_size = (2, 2)))
-
     # Flattening
     classifier.add(Flatten())
 
     # Full connection
+    classifier.add(Dense(units = 1024, activation = 'relu'))
+    classifier.add(Dropout(0.2))
     classifier.add(Dense(units = 512, activation = 'relu'))
-    classifier.add(Dense(units = 256, activation = 'relu'))
-    classifier.add(Dense(units = 128, activation = 'relu'))
+    classifier.add(Dropout(0.2))
     classifier.add(Dense(units = 40, activation = 'softmax'))
 
     # Compiling the CNN
-    classifier.compile(optimizer = 'adam', loss = 'categorical_crossentropy', metrics = ['accuracy'])
+    classifier.compile(optimizer = 'adamax', loss = 'categorical_crossentropy', metrics = ['accuracy'])
 
     return classifier
 
@@ -118,22 +103,11 @@ if __name__=='__main__':
     y_train = Y[:40000]
     y_test = Y[40000:]
 
-    datagen = ImageDataGenerator(
-    featurewise_center=True,
-    featurewise_std_normalization=True,
-    rotation_range=20,
-    width_shift_range=0.2,
-    height_shift_range=0.2,
-    horizontal_flip=True)
-
-    # compute quantities required for featurewise normalization
-    # (std, mean, and principal components if ZCA whitening is applied)
-    datagen.fit(X_train)
-
     classifier = build_cnn()
-    # fits the model on batches with real-time data augmentation:
-    classifier.fit_generator(datagen.flow(X_train, y_train, batch_size=32),
-                        steps_per_epoch=len(X_train) / 32, epochs=100)
+    classifier.fit(X_train, y_train, verbose=2, epochs=30)
+
+    score = classifier.evaluate(X_test, y_test)
+    print(score)
 
     test_kaggle_file = pd.read_csv(url_kaggle, header=None)
     X_kaggle = np.array(test_kaggle_file.iloc[:])
