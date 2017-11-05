@@ -7,7 +7,6 @@ from keras import backend as K
 from keras.utils import to_categorical
 
 import numpy as np
-
 import pandas as pd
 
 from keras.models import load_model
@@ -57,12 +56,15 @@ def predict(image_segment):
     return "A"
 
 if __name__=='__main__':
-    x = np.array(pd.read_csv("test_x.csv", header=None))
+    x = np.array(pd.read_csv("trainer/test_x.csv", header=None))
     x = x.reshape(-1,64,64)
     x = filter_image(x)
-    y = np.array(pd.read_csv("y.csv", header=None)).reshape(-1,1)
+    classifier = load_model('emnist_model.h5')
+    results = []
     for image in x:
-        image = segment(image)
-        character1 = predict(image[0])
-        character2 = predict(image[1])
-        character3 = predict(image[2])
+        segmented_image = segment(image)
+        character1 = np.argmax(classifier.predict(segmented_image[0]))
+        character2 = np.argmax(classifier.predict(segmented_image[0]))
+        character3 = np.argmax(classifier.predict(segmented_image[0]))
+        results.append([character1, character2, character3])
+    export_results("results.csv",'Id', 'Label', results)
