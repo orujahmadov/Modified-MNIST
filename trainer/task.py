@@ -1,58 +1,51 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Sat Oct 28 20:46:30 2017
 
-@author: orujahmadov
-"""
-import csv
-import sys
-import pandas as pd
+
+import keras
+from keras.datasets import mnist
+from keras.models import Sequential
+from keras.layers import Dense, Dropout, Flatten
+from keras.layers import Conv2D, MaxPooling2D
+from keras import backend as K
+from keras.utils import to_categorical
+from sklearn.cross_validation import train_test_split
+
 import numpy as np
-import os
-import pickle
+import pandas as pd
 
-from sklearn.cluster import KMeans
-from sklearn.externals import joblib
-from sklearn import metrics
+def build_classifier():
+    model = Sequential()
+    model.add(Conv2D(32, kernel_size=(3, 3), activation='relu', input_shape=(28,28,1)))
+    model.add(Conv2D(32, (3, 3), activation='relu'))
+    model.add(Conv2D(64, (3, 3), activation='relu'))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
 
-def upload_blob(bucket_name, source_file_name, destination_blob_name):
-    """Uploads a file to the bucket."""
-    from google.cloud import storage
-    storage_client = storage.Client()
-    bucket = storage_client.get_bucket(bucket_name)
-    blob = bucket.blob(destination_blob_name)
+    model.add(Dropout(0.25))
+    model.add(Flatten())
+    model.add(Dense(256, activation='relu'))
+    model.add(Dropout(0.5))
+    model.add(Dense(12, activation='softmax'))
 
-    blob.upload_from_filename(source_file_name)
+    model.compile(loss=keras.losses.categorical_crossentropy,
+                  optimizer='adam',
+                  metrics=['accuracy'])
+    return model
 
-    print('File {} uploaded to {}.'.format(
-        source_file_name,
-        destination_blob_name))
+if __name__ == '__main__':
+    X = np.array(pd.read_csv("https://storage.googleapis.com/modified-mnist-bucket/x.csv",header=None))
+    X = X.reshape(-1, 28, 28, 1)
+    Y = np.array(pd.read_csv("https://storage.googleapis.com/modified-mnist-bucket/y.csv",header=None))
+    Y = to_categorical(Y, 12)
+    x_train, x_test, y_train, y_test = train_test_split(X, Y, random_state=8, test_size=0.2)
 
+    model = build_classifier()
 
-if __name__=='__main__':
+    model.fit(x_train, y_train, batch_size=32, epochs=20, verbose=1)
 
+    score = model.evaluate(x_test, y_test, verbose=0)
 
-    #url_kaggle = 'https://www.googleapis.com/download/storage/v1/b/modified-mnist-bucket/o/test_x.csv?generation=1509329534125830&alt=media'
-    url_kaggle = 'trainer/test_x.csv'
-    test_kaggle_file = pd.read_csv(url_kaggle, header=None)
-    X_kaggle = np.array(test_kaggle_file.iloc[:])
-    X_kaggle = X_kaggle.reshape(-1, 64,64)
+    print('Test loss:', score[0])
+    print('Test accuracy:', score[1])
 
-    for row in range(len(X_kaggle)):
-        for column in range(len(X_kaggle[row])):
-            for index in range(len(X_kaggle[row][column])):
-                if (X_kaggle[row][value][index] < 180):
-                    X_kaggle[row][value][index] = 0
-
-    cluster = KMeans(n_clusters=3, random_state=0).fit(X_kaggle[0])
-
-    results = open('cluster_result.txt','w')
-
-    for center in cluster.cluster_centers_:
-        for coordinate in center:
-            results.write(str(coordinate) + " ")
-        results.write("\r\n")
-    results.close()
-
-    # Save model
-    #upload_blob('modified-mnist-bucket','cluster_result.txt', 'cluster_result.txt')
+    model.save('emnist_model.h5')
+    #Save model
+    upload_blob('modified-mnist-bucket','emnist_model.h5', 'emnist_model.h5')
