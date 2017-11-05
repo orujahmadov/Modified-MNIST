@@ -1,5 +1,3 @@
-
-
 import keras
 from keras.datasets import mnist
 from keras.models import Sequential
@@ -9,60 +7,62 @@ from keras import backend as K
 from keras.utils import to_categorical
 
 import numpy as np
+
 import pandas as pd
 
-def upload_blob(bucket_name, source_file_name, destination_blob_name):
-    """Uploads a file to the bucket."""
-    from google.cloud import storage
-    storage_client = storage.Client()
-    bucket = storage_client.get_bucket(bucket_name)
-    blob = bucket.blob(destination_blob_name)
+from keras.models import load_model
 
-    blob.upload_from_filename(source_file_name)
+def filter_image(image):
+    margin_pixel_intensity = 220
+    for i in range(len(image)):
+        for j in range(len(image[i])):
+            for z in range(len(image[i][j])):
+                if image[i][j][z] < margin_pixel_intensity:
+                    image[i][j][z] = 0
 
-    print('File {} uploaded to {}.'.format(
-        source_file_name,
-        destination_blob_name))
+    return image
 
-def build_classifier():
-    model = Sequential()
-    model.add(Conv2D(32, kernel_size=(3, 3), activation='relu', input_shape=(28,28,1)))
-    model.add(Conv2D(32, (3, 3), activation='relu'))
-    model.add(Conv2D(64, (3, 3), activation='relu'))
-    model.add(MaxPooling2D(pool_size=(2, 2)))
+def segment(image):
+    x_scale = []
+    for row in range(len(image)):
+        for column in range(len(image[row])):
+            if image[row][column] != 0:
+                coordinates = []
+                coordinates.append(row)
+                coordinates.append(column)
+                x_scale.append(coordinates)
 
-    model.add(Dropout(0.25))
-    model.add(Flatten())
-    model.add(Dense(256, activation='relu'))
-    model.add(Dropout(0.5))
-    model.add(Dense(12, activation='softmax'))
+    kmeans = KMeans(n_clusters=3, random_state=0).fit(x_scale)
+    centers = kmeans.cluster_centers_
+    margin = 14
+    cluster1 = image[max(0, int(centers[0][0])-margin):min(64, int(centers[0][0])+margin), max(0, int(centers[0][1])-margin):min(64, int(centers[0][1])+margin)]
+    cluster2 = image[max(0, int(centers[1][0])-margin):min(64, int(centers[1][0])+margin), max(0, int(centers[1][1])-margin):min(64, int(centers[1][1])+margin)]
+    cluster3 = image[max(0, int(centers[2][0])-margin):min(64, int(centers[2][0])+margin), max(0, int(centers[2][1])-margin):min(64, int(centers[2][1])+margin)]
 
-    model.compile(loss=keras.losses.categorical_crossentropy,
-                  optimizer=keras.optimizers.Adadelta(),
-                  metrics=['accuracy'])
-    return model
+    clusters = [cluster1, cluster2, cluster3]
 
-if __name__ == '__main__':
-    X = np.array(pd.read_csv("https://storage.googleapis.com/modified-mnist-bucket/x.csv",header=None))
-    X = X.reshape(-1, 28, 28, 1)
-    Y = np.array(pd.read_csv("https://storage.googleapis.com/modified-mnist-bucket/y.csv",header=None))
-    Y = Y.reshape(-1,1)
-    Y = to_categorical(Y, 12)
+    return clusters
 
-    x_train = X[:200000]
-    x_test = X[200000:]
-    y_train = Y[:200000]
-    y_test = Y[200000:]
+def export_results(file_name, header1_name, header2_name, results):
+    with open(file_name, 'wb') as csvfile:
+        filewriter = csv.writer(csvfile, delimiter=',',
+                                quotechar='|', quoting=csv.QUOTE_MINIMAL)
+        filewriter.writerow([header1_name, header2_name])
+        index = 0
+        for result in results:
+            filewriter.writerow([index,result])
+            index+=1
 
-    model = build_classifier()
+def predict(image_segment):
+    return "A"
 
-    model.fit(x_train, y_train, batch_size=32, epochs=20, verbose=1)
-
-    score = model.evaluate(x_test, y_test, verbose=0)
-
-    print('Test loss:', score[0])
-    print('Test accuracy:', score[1])
-
-    model.save('emnist_model.h5')
-    #Save model
-    upload_blob('modified-mnist-bucket','emnist_model.h5', 'emnist_model.h5')
+if __name__=='__main__':
+    x = np.array(pd.read_csv("test_x.csv", header=None))
+    x = x.reshape(-1,64,64)
+    x = filter_image(x)
+    y = np.array(pd.read_csv("y.csv", header=None)).reshape(-1,1)
+    for image in x:
+        image = segment(image)
+        character1 = predict(image[0])
+        character2 = predict(image[1])
+        character3 = predict(image[2])
