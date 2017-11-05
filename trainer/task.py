@@ -7,6 +7,11 @@ from keras import backend as K
 from keras.utils import to_categorical
 
 import numpy as np
+<<<<<<< HEAD
+=======
+import csv
+from sklearn.cluster import KMeans
+>>>>>>> 8c8d5e72cd15a3ba46be27014a50d230729e108d
 import pandas as pd
 
 from keras.models import load_model
@@ -21,6 +26,16 @@ def filter_image(image):
 
     return image
 
+def reshape(array):
+    reshaped = np.zeros((28,28))
+
+    if (len(array) != 28 or len(array[0]) != 28):
+        reshaped[:len(array),:len(array[0])] = array
+    else:
+        reshaped = array
+    
+    return reshaped 
+    
 def segment(image):
     x_scale = []
     for row in range(len(image)):
@@ -38,9 +53,15 @@ def segment(image):
     cluster2 = image[max(0, int(centers[1][0])-margin):min(64, int(centers[1][0])+margin), max(0, int(centers[1][1])-margin):min(64, int(centers[1][1])+margin)]
     cluster3 = image[max(0, int(centers[2][0])-margin):min(64, int(centers[2][0])+margin), max(0, int(centers[2][1])-margin):min(64, int(centers[2][1])+margin)]
 
-    clusters = [cluster1, cluster2, cluster3]
+    
+    # Reshape all clisters into 28x28 
+    character1 = reshape(cluster1)
+    character2 = reshape(cluster2)
+    character3 = reshape(cluster3)
 
-    return clusters
+    characters = [character1, character2, character3]
+    
+    return characters
 
 def export_results(file_name, header1_name, header2_name, results):
     with open(file_name, 'wb') as csvfile:
@@ -51,9 +72,6 @@ def export_results(file_name, header1_name, header2_name, results):
         for result in results:
             filewriter.writerow([index,result])
             index+=1
-
-def predict(image_segment):
-    return "A"
 
 if __name__=='__main__':
     x = np.array(pd.read_csv("trainer/test_x.csv", header=None))
