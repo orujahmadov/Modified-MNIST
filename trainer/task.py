@@ -4,13 +4,11 @@ Created on Sat Oct 28 20:46:30 2017
 
 @author: orujahmadov
 """
-from PIL import Image
 import csv
 from sklearn.cluster import KMeans
-from sklearn.externals import joblib
-from sklearn import metrics
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
 
 def upload_blob(bucket_name, source_file_name, destination_blob_name):
     """Uploads a file to the bucket."""
@@ -47,7 +45,7 @@ def segment(image):
         
     kmeans = KMeans(n_clusters=3, random_state=0).fit(x_scale)
     centers = kmeans.cluster_centers_
-    margin = 20
+    margin = 14
     cluster1 = image[max(0, int(centers[0][0])-margin):min(64, int(centers[0][0])+margin), max(0, int(centers[0][1])-margin):min(64, int(centers[0][1])+margin)]
     cluster2 = image[max(0, int(centers[1][0])-margin):min(64, int(centers[1][0])+margin), max(0, int(centers[1][1])-margin):min(64, int(centers[1][1])+margin)]
     cluster3 = image[max(0, int(centers[2][0])-margin):min(64, int(centers[2][0])+margin), max(0, int(centers[2][1])-margin):min(64, int(centers[2][1])+margin)]
@@ -65,30 +63,24 @@ def export_results(file_name, header1_name, header2_name, results):
         for result in results:
             filewriter.writerow([index,result])
             index+=1
+
+def predict(image_segment):
+    return "A"
             
-if __name__=='__main__':
+if __name__=='__main__':    
+    x = np.array(pd.read_csv("test_x.csv", header=None))
+    x = x.reshape(-1,64,64)
+    x = filter_image(x)
+    y = np.array(pd.read_csv("y.csv", header=None)).reshape(-1,1)
+    for image in x:
+        image = segment(image)
+        character1 = predict(image[0])
+        character2 = predict(image[1])
+        character3 = predict(image[2])
+    
 
+    index = 5
+    x_segmented = segment(x[index])
 
-    #url_kaggle = 'https://www.googleapis.com/download/storage/v1/b/modified-mnist-bucket/o/test_x.csv?generation=1509329534125830&alt=media'
-    import os, glob
-    os.chdir(r'C:\Users\orujahmadov\Desktop\Modified-MNIST\letters\A')
-    with open('A.csv', 'w') as csvfile:
-        for file in glob.glob("*.png"):
-            im = Image.open(file)
-            im = im.resize((48,48))
-            pixels = np.array(list(im.getdata()))
-            pixels = pixels[:,3]
-            pixels = pixels.reshape(2304)
-            filewriter = csv.writer(csvfile)
-            filewriter.writerow(pixels.tolist())
-    import pandas as pd
-    data_M = np.array(pd.read_csv('M.csv', header=None))
-    data_A = np.array(pd.read_csv('A.csv', header=None))
-    data = np.vstack((data_A, data_M))
-    label_A = np.ones((len(data_A),))
-    label_M = np.zeros((469,))
-    labels = np.concatenate((label_A, label_M))
-    plt.imshow(np.uint8(pixels))
-    plt.show()
     # Save model
     #upload_blob('modified-mnist-bucket','cluster_result.txt', 'cluster_result.txt')
