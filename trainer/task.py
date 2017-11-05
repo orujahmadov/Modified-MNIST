@@ -33,6 +33,16 @@ def filter_image(image):
     
     return image
 
+def reshape(array):
+    reshaped = np.zeros((28,28))
+
+    if (len(array) != 28 or len(array[0]) != 28):
+        reshaped[:len(array),:len(array[0])] = array
+    else:
+        reshaped = array
+    
+    return reshaped 
+    
 def segment(image):
     x_scale = []
     for row in range(len(image)):
@@ -50,9 +60,14 @@ def segment(image):
     cluster2 = image[max(0, int(centers[1][0])-margin):min(64, int(centers[1][0])+margin), max(0, int(centers[1][1])-margin):min(64, int(centers[1][1])+margin)]
     cluster3 = image[max(0, int(centers[2][0])-margin):min(64, int(centers[2][0])+margin), max(0, int(centers[2][1])-margin):min(64, int(centers[2][1])+margin)]
     
-    clusters = [cluster1, cluster2, cluster3]
+    # Reshape all clisters into 28x28 
+    character1 = reshape(cluster1)
+    character2 = reshape(cluster2)
+    character3 = reshape(cluster3)
+
+    characters = [character1, character2, character3]
     
-    return clusters
+    return characters
 
 def export_results(file_name, header1_name, header2_name, results):
     with open(file_name, 'wb') as csvfile:
@@ -63,24 +78,28 @@ def export_results(file_name, header1_name, header2_name, results):
         for result in results:
             filewriter.writerow([index,result])
             index+=1
-
-def predict(image_segment):
-    return "A"
             
 if __name__=='__main__':    
     x = np.array(pd.read_csv("test_x.csv", header=None))
     x = x.reshape(-1,64,64)
     x = filter_image(x)
-    y = np.array(pd.read_csv("y.csv", header=None)).reshape(-1,1)
-    for image in x:
-        image = segment(image)
-        character1 = predict(image[0])
-        character2 = predict(image[1])
-        character3 = predict(image[2])
     
-
-    index = 5
+    x_before_filter = np.array(pd.read_csv("test_x.csv", header=None))
+    x_emnist = np.array(pd.read_csv("x.csv", header=None))
+    x_before_filter = x_before_filter.reshape(-1,64,64)
+    
+    index = 178
+    
+    plt.imshow(np.uint8(x[index]))
+    plt.show()
+    
     x_segmented = segment(x[index])
-
+    plt.imshow(np.uint8(x_segmented[0]))
+    plt.show()
+    plt.imshow(np.uint8(x_segmented[1]))
+    plt.show()
+    plt.imshow(np.uint8(x_segmented[2]))
+    plt.show()
+    
     # Save model
     #upload_blob('modified-mnist-bucket','cluster_result.txt', 'cluster_result.txt')
