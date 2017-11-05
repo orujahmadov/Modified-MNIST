@@ -7,10 +7,22 @@ from keras.layers import Dense, Dropout, Flatten
 from keras.layers import Conv2D, MaxPooling2D
 from keras import backend as K
 from keras.utils import to_categorical
-from sklearn.cross_validation import train_test_split
 
 import numpy as np
 import pandas as pd
+
+def upload_blob(bucket_name, source_file_name, destination_blob_name):
+    """Uploads a file to the bucket."""
+    from google.cloud import storage
+    storage_client = storage.Client()
+    bucket = storage_client.get_bucket(bucket_name)
+    blob = bucket.blob(destination_blob_name)
+
+    blob.upload_from_filename(source_file_name)
+
+    print('File {} uploaded to {}.'.format(
+        source_file_name,
+        destination_blob_name))
 
 def build_classifier():
     model = Sequential()
@@ -26,7 +38,7 @@ def build_classifier():
     model.add(Dense(12, activation='softmax'))
 
     model.compile(loss=keras.losses.categorical_crossentropy,
-                  optimizer='adam',
+                  optimizer=keras.optimizers.Adadelta(),
                   metrics=['accuracy'])
     return model
 
@@ -34,8 +46,13 @@ if __name__ == '__main__':
     X = np.array(pd.read_csv("https://storage.googleapis.com/modified-mnist-bucket/x.csv",header=None))
     X = X.reshape(-1, 28, 28, 1)
     Y = np.array(pd.read_csv("https://storage.googleapis.com/modified-mnist-bucket/y.csv",header=None))
+    Y = Y.reshape(-1,1)
     Y = to_categorical(Y, 12)
-    x_train, x_test, y_train, y_test = train_test_split(X, Y, random_state=8, test_size=0.2)
+
+    x_train = X[:200000]
+    x_test = X[200000:]
+    y_train = Y[:200000]
+    y_test = Y[200000:]
 
     model = build_classifier()
 
