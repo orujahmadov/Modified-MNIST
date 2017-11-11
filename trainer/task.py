@@ -27,7 +27,7 @@ def upload_blob(bucket_name, source_file_name, destination_blob_name):
         destination_blob_name))
 
 def filter_image(image):
-    margin_pixel_intensity = 240
+    margin_pixel_intensity = 220
     for i in range(len(image)):
         for j in range(len(image[i])):
             for z in range(len(image[i][j])):
@@ -93,7 +93,6 @@ def build_classifier():
     X = np.array(pd.read_csv("https://storage.googleapis.com/modified-mnist-bucket/x_b.csv",header=None))
     X = X.reshape(-1, 28, 28)
     X = filter_image(X)
-    X = flip_images(X)
     X = X.reshape(-1, 28, 28, 1)
     Y = np.array(pd.read_csv("https://storage.googleapis.com/modified-mnist-bucket/y_b.csv",header=None))
     Y = Y.reshape(-1,1)
@@ -193,5 +192,5 @@ if __name__ == '__main__':
     #Save model
     upload_blob('modified-mnist-bucket1','results.csv', 'results.csv')
     
-    classifier.save("emnist_model90.h5")
+    classifier.save("emnist_model.h5")
     upload_blob('modified-mnist-bucket1','emnist_model.h5', 'emnist_model.h5')
