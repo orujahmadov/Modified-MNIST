@@ -5,3 +5,5 @@ Authors:
 - Oruj Ahmadov
 - Muhammad Safa
 - Niloofar Khoshsiyar
+
+Required packages: keras, sklearn, numpy, pandas
