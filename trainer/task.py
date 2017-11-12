@@ -39,9 +39,15 @@ def filter_image(image):
 def flip_images(image):
     for each_image in image:
         each_image = np.fliplr(each_image)
+<<<<<<< HEAD
+
+    return image
+
+=======
     
     return image
     
+>>>>>>> c575c3ede4c365a0b8ee2b47a898ceba80c877dd
 def reshape(array):
     reshaped = np.zeros((28,28))
 
@@ -119,7 +125,11 @@ def build_classifier():
 
     datagen = ImageDataGenerator(
     rotation_range=45,
+<<<<<<< HEAD
+    width_shift_range=0.1,
+=======
     width_shift_range=0.1, 
+>>>>>>> c575c3ede4c365a0b8ee2b47a898ceba80c877dd
     height_shift_range=0.1
     )
     # compute quantities required for featurewise normalization
@@ -182,15 +192,27 @@ if __name__ == '__main__':
 
     results = []
     for image in x:
+<<<<<<< HEAD
+        segments = segment(image)
+=======
         segments = segment(image)            
+>>>>>>> c575c3ede4c365a0b8ee2b47a898ceba80c877dd
         character1 = np.argmax(classifier.predict(segments[0].reshape(-1,28,28,1)))
         character2 = np.argmax(classifier.predict(segments[1].reshape(-1,28,28,1)))
         character3 = np.argmax(classifier.predict(segments[2].reshape(-1,28,28,1)))
         results.append([character1, character2, character3])
+<<<<<<< HEAD
+
+    export_results("results.csv",'Id', 'Label', results)
+    #Save model
+    upload_blob('modified-mnist-bucket1','results.csv', 'results.csv')
+
+=======
         
     export_results("results.csv",'Id', 'Label', results)
     #Save model
     upload_blob('modified-mnist-bucket1','results.csv', 'results.csv')
     
+>>>>>>> c575c3ede4c365a0b8ee2b47a898ceba80c877dd
     classifier.save("emnist_model.h5")
     upload_blob('modified-mnist-bucket1','emnist_model.h5', 'emnist_model.h5')
